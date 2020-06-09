@@ -41,23 +41,39 @@ Determinar los factores que inciden para que una persona gane más de 50K
 Se trabajará con el dataset Adult que se obtuvo del siguiente enlace: http://archive.ics.uci.edu/ml/datasets/Adult. 
 
 La base de datos Adult tiene 48840 observaciones y 15 variables, las cuales se detallan a continuación: 
-* age: Edad 
-* workclass: Clase de trabajo (Private, Self-emp-not-inc, Self-emp-inc, Federal-gov, Local-gov, State-gov, Without-pay, Never-worked)
-* fnlwgt: Continuo
-* education: Educación (Bachelors, Some-college, 11th, HS-grad, Prof-school, Assoc-acdm, Assoc-voc, 9th, 7th-8th, 12th, Masters, 1st-4th, 10th, Doctorate, 5th-6th, Preschool)
-* education-num: Años de educación
-* marital-status: Estado civil (Married-civ-spouse, Divorced, Never-married, Separated, Widowed, Married-spouse-absent, Married-AF-spouse)
-* occupation: Ocupación (Tech-support, Craft-repair, Other-service, Sales, Exec-managerial, Prof-specialty, Handlers-cleaners, Machine-op-inspct, Adm-clerical, Farming-fishing, Transport-moving, Priv-house-serv, Protective-serv, Armed-Forces)
-* relationship: Relación (Wife, Own-child, Husband, Not-in-family, Other-relative, Unmarried)
-* race: Raza (Asian-Pac-Islander, Amer-Indian-Eskimo, Other, Black)
-* sex: Género (Hombre / Mujer)
-* capital-gain: Ganancia de capital
-* capital-loss: Pérdida de capital
-* hours-per-week: Horas por semana
-* native-country: País de orígen (United-States, Cambodia, England, Puerto-Rico, Canada, Germany, Outlying-US(Guam-USVI-etc), India, Japan, Greece, South, China, Cuba, Iran, Honduras, Philippines, Italy, Poland, Jamaica, Vietnam, Mexico, Portugal, Ireland, France, Dominican-Republic, Laos, Ecuador, Taiwan, Haiti, Columbia, Hungary, Guatemala, Nicaragua, Scotland, Thailand, Yugoslavia, El-Salvador, Trinadad&Tobago, Peru, Hong, Holand-Netherlands)
-* income: Ingresos (<=50K/>50K)
 
-La información está formada por 2 archivos: adult.data y adult.test que suman el 100% de observaciones, ya que la documentación dice que el archivo adult.data tiene 2/3 de la información y el archivo de adult.test tiene 1/3 de la información. 
+* age: Edad de la persona [Entero mayor que cero]
+
+* workclass: Un término general para representar la situación laboral de un individuo, que se clasifica en: Private, Self-emp-not-inc, Self-emp-inc, Federal-gov, Local-gov, State-gov, Without-pay, Never-worked. 
+
+* fnlwgt (peso final): Es el número de personas que el censo cree que representa a la población. 
+
+* education: El nivel más alto de educación alcanzado por una persona, puede ser: Bachelors, Some-college, 11th, HS-grad, Prof-school, Assoc-acdm, Assoc-voc, 9th, 7th-8th, 12th, Masters, 1st-4th, 10th, Doctorate, 5th-6th, Preschool. 
+
+* education-num: El nivel más alto de educación alcanzado en forma numérica.
+
+* marital-status: Estado civil de las personas, se tiene: Married-civ-spouse, Divorced, Never-married, Separated, Widowed, Married-spouse-absent, Married-AF-spouse. Married-civ-spouse corresponde a un cónyuge civil, mientras que Married-AF-spouse corresponde a un cónyuge de las Fuerzas Armadas. 
+
+* occupation: El tipo general de ocupación de las personas, se tiene: Tech-support, Craft-repair, Other-service, Sales, Exec-managerial, Prof-specialty, Handlers-cleaners, Machine-op-inspct, Adm-clerical, Farming-fishing, Transport-moving, Priv-house-serv, Protective-serv, Armed-Forces. 
+
+* relationship: Representa la relación del individio, se tiene: Wife, Own-child, Husband, Not-in-family, Other-relative, Unmarried. 
+
+* race: Raza de la persona, se tiene: Asian-Pac-Islander, Amer-Indian-Eskimo, Other, Black. 
+
+* sex: El sexo biológico del individuo, se tiene: Hombre / Mujer.
+
+* capital-gain: Representa el capital ganado del individuo. 
+
+* capital-loss: Pérdida de capital de un individuo. 
+
+* hours-per-week: Las horas que una persona ha reportado de su trabajo por semana. 
+
+* native-country: País de origen de la persona, puede ser: United-States, Cambodia, England, Puerto-Rico, Canada, Germany, Outlying-US(Guam-USVI-etc), India, Japan, Greece, South, China, Cuba, Iran, Honduras, Philippines, Italy, Poland, Jamaica, Vietnam, Mexico, Portugal, Ireland, France, Dominican-Republic, Laos, Ecuador, Taiwan, Haiti, Columbia, Hungary, Guatemala, Nicaragua, Scotland, Thailand, Yugoslavia, El-Salvador, Trinadad&Tobago, Peru, Hong, Holand-Netherlands. 
+
+* income: Si una persona gana más de 50K o no, se tiene: <=50K / >50K. 
+
+
+Los datos se encuentran en 2 archivos: adult.data y adult.test que suman el 100% de observaciones, la documentación indica que el archivo adult.data tiene 2/3 de los datos y el archivo de adult.test tiene 1/3 de los datos. 
 
 
 ## Extracción 
@@ -118,12 +134,19 @@ colSums(is.na(adultData))
 colSums(adultData=="")
 colSums(adultData==" ?")
 
-#Se tiene alrededor de un 5% de valores con incógnitas, por lo que se va a reemplazar con el valor más frecuente por ser variables categóricas, esto producirá un sesgo muy pequeño. Otra opción es eliminar estos valores
 
-#Obtengo el valor más frecuente (moda) y asigno a los valores con incógnitas.
-adultData$workclass[adultData$workclass==" ?"]<- mlv(adultData$workclass, method = "mfv")[1]
+#Reemplazo las incógnitas por valores vacíos para aplicar la imputación
+adultData$workclass[adultData$workclass==" ?"]<- NA
+adultData$occupation[adultData$occupation==" ?"]<- NA
 
-adultData$occupation[adultData$occupation==" ?"]<- mlv(adultData$occupation, method = "mfv")[1]
+#Las variables workclass y occupation tienen valores vacíos (NA), corresponden a un 5% de los datos, tranquilamente se pueden eliminar, sin embargo, se emplea el método de imputación de valores basado en la similitud o diferencia entre los registros, la imputación basada en k vecinos más próximos (en inglés, kNN-imputation). Se emplea este método de imputación bajo la hipótesis de que nuestros datos guardan cierta relación.
+
+#install.packages('VIM')
+
+library(VIM)
+
+adultData$workclass <- kNN(adultData)$workclass
+adultData$occupation <- kNN(adultData)$occupation
 
 #Aplico nuevamente la estadísticas de valores vacíos
 colSums(adultData==" ?")
